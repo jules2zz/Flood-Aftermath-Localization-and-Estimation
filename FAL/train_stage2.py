@@ -115,7 +115,7 @@ logging.info(f"Test set: {test_ds}")
 model = cosplace_network_stage2.GeoLocalizationNet(args.backbone, args.fc_output_dim, args.train_all_layers)
 for name, param in model.named_parameters():
     if param.requires_grad:
-        print(f"renewable model parameters: {name}, dimensions: {param.shape}")
+        print(f"Trainable prompt parameters: {name}, shape: {param.shape}")
 
 prompt_learners = torch.load(args.prompt_learners)
 prompt_learners = [prompt_learner.cuda() for prompt_learner in prompt_learners]
