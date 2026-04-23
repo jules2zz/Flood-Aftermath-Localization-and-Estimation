@@ -19,7 +19,7 @@ from cosplace_model.cosplace_network_stage1 import PromptLearner
 
 torch.backends.cudnn.benchmark = True  # Provides a speedup
 
-# 删除cache文件夹
+# delete cache
 cache_path = "./cache"
 if os.path.exists(cache_path):
     shutil.rmtree(cache_path)
@@ -47,10 +47,10 @@ model = cosplace_network_stage1.GeoLocalizationNet(args.backbone, args.fc_output
 prompt_learners = [PromptLearner(group.get_classes_num(), model.dtype, model.token_embedding) for group in groups]
 for name, param in prompt_learners[0].named_parameters():
     if param.requires_grad:
-        print(f"模型可更新参数: {name}, 维度: {param.shape}")
+        print(f"Trainable prompt parameters: {name}, shape: {param.shape}")
         
 prompt_optimizers = [torch.optim.Adam(prompt_learner.parameters(), lr=args.lr_stage1) for prompt_learner in prompt_learners]
-schedulers = [CosineAnnealingLR(prompt_optimizer, T_max=args.epochs_num_stage1//len(groups)) for prompt_optimizer in prompt_optimizers]    # 余弦退火学习率衰减
+schedulers = [CosineAnnealingLR(prompt_optimizer, T_max=args.epochs_num_stage1//len(groups)) for prompt_optimizer in prompt_optimizers]    # Cosine annealing learning rate decay
 
 logging.info(f"There are {torch.cuda.device_count()} GPUs and {multiprocessing.cpu_count()} CPUs.")
 
@@ -72,10 +72,10 @@ if args.augmentation_device == "cuda":
             T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
         ])
 
-scaler = torch.cuda.amp.GradScaler()    # 自动混合精度
+scaler = torch.cuda.amp.GradScaler()    # Automatic mixed precision
 xent = SupConLoss(args.device)
 
-# 第一阶段训练
+# Stage-1 training
 logging.info('start training stage1')
 if args.cache_feature_folder and os.listdir(args.cache_feature_folder):   # lists have been saved in cache feature folder
     image_features_list_all = torch.load(os.path.join(args.cache_feature_folder, "image_features_list_all.pth"))
