@@ -329,51 +329,6 @@ saves/Qwen2.5-VL-7B-Instruct/lora/flood_<timestamp>/
 
 ---
 
-## Main arguments
-
-## FAL
-
-Some of the most important arguments in `FAL/parser.py` are:
-
-| Argument | Meaning |
-|---|---|
-| `--backbone` | CLIP backbone: `CLIP-RN50`, `CLIP-RN101`, `CLIP-ViT-B-16`, `CLIP-ViT-B-32` |
-| `--fc_output_dim` | final descriptor dimension |
-| `--train_set_folder` | training image root |
-| `--val_set_folder` | validation set root |
-| `--test_set_folder` | test set root |
-| `--batch_size_stage1` | stage-1 batch size |
-| `--epochs_num_stage1` | stage-1 epochs |
-| `--batch_size` | stage-2 batch size |
-| `--epochs_num` | stage-2 epochs |
-| `--iterations_per_epoch` | stage-2 iterations per epoch |
-| `--prompt_learners` | path to saved stage-1 prompt learners |
-| `--online_fmi` | enable online FMI synthesis |
-| `--fmi_water_dir` | folder of water textures |
-| `--soft_triplet` | enable triplet loss |
-| `--positive_dist_threshold` | positive radius in meters |
-| `--num_preds_to_save` | number of retrieved predictions to save |
-
-## FAE
-
-The current `run_flood_sft.py` exposes its main hyperparameters as in-file constants and a `BASE_ARGS` dictionary rather than CLI flags. The ones you are most likely to change are:
-
-- `model_name_or_path`
-- `dataset`
-- `val_size`
-- `learning_rate`
-- `per_device_train_batch_size`
-- `gradient_accumulation_steps`
-- `lora_rank`
-- `lora_alpha`
-- `freeze_vision_tower`
-- `freeze_multi_modal_projector`
-- `TOTAL_EPOCHS`
-- `EPOCHS_PER_STAGE`
-- `EVAL_DATASET`
-
----
-
 ## Acknowledgements
 
 This codebase builds on ideas from large-scale visual place recognition, CLIP-based representation learning, and LoRA-based multimodal fine-tuning. The public release can acknowledge upstream projects that inspired the implementation and engineering structure.
