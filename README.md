@@ -11,7 +11,7 @@ This repository is organized around the full pipeline:
 2. **How severe?** Estimate visible aftermath impacts from the localized image using a fine-tuned vision-language model.
 
 <p align="center">
-  <img src="assets/overview.png" width="95%" alt="FALE overview">
+  <img src="overview.png" width="95%" alt="FALE overview">
 </p>
 
 ---
@@ -86,7 +86,7 @@ The training pipeline contains two stages.
 Stage 1 learns a **place-aware prompt space** using frozen CLIP image and text representations. The goal is to align each geographic class with a learnable textual prompt, so that the model captures stable place semantics rather than overfitting to superficial appearance.
 
 <p align="center">
-  <img src="assets/FAL.png" width="95%" alt="FAL training framework">
+  <img src="FAL.png" width="95%" alt="FAL training framework">
 </p>
 
 ### Stage 2: Vision Anchor Refine
@@ -104,7 +104,7 @@ This stage is the core mechanism that improves retrieval robustness under flood-
 Given a flood image query, FAL retrieves the most likely street-view locations from a large georeferenced database and evaluates them using **Recall@K**.
 
 <p align="center">
-  <img src="assets/result1.png" width="95%" alt="Retrieval examples">
+  <img src="result1.png" width="95%" alt="Retrieval examples">
 </p>
 
 Green borders indicate correct retrievals, and red borders indicate failure cases.
@@ -128,7 +128,7 @@ The current implementation uses a structured instruction-following setup with co
 Each axis is scored on a 3-level severity scale, for example `FD2`, `IN3`, or `EN1`.
 
 <p align="center">
-  <img src="assets/FAE.png" width="95%" alt="FAE fine-tuning framework">
+  <img src="FAE.png" width="95%" alt="FAE fine-tuning framework">
 </p>
 
 The estimator is intended to answer the question: **what visible impacts are present in the image, and how severe are they?**
