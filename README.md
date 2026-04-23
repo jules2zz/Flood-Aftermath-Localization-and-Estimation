@@ -5,10 +5,10 @@ Official codebase for a two-part framework for image-based urban flood analysis:
 - **FAL**: Flood Aftermath Localizer, a street-level geolocation model for flood-related imagery under severe appearance shift.
 - **FAE**: Flood Aftermath Estimator, a visual-language flood impact assessment model fine-tuned with LoRA to predict multi-axis aftermath severity codes.
 
-This repository is organized around the full pipeline:
+This repo is organized around the full pipeline:
 
-1. **Where?** Localize a flood image to its most likely street location using large-scale street-view retrieval.
-2. **How severe?** Estimate visible aftermath impacts from the localized image using a fine-tuned vision-language model.
+1. **Where?** Localize a flood image to its most likely street location.
+2. **How severe?** Estimate visible aftermath impacts from the localized image.
 
 <p align="center">
   <img src="overview.png" width="95%" alt="FALE overview">
@@ -16,16 +16,6 @@ This repository is organized around the full pipeline:
 
 ---
 
-## Highlights
-
-- Two-stage **Flood Aftermath Localizer (FAL)** tailored to flood-induced appearance changes.
-- **Geo-Prompt Forge** for place-aware visual-text alignment.
-- **Vision Anchor Refine** with online **Flood-Masked Invariance (FMI)** augmentation.
-- **Flood Aftermath Estimator (FAE)** based on LoRA fine-tuning of a pretrained VLM.
-- Retrieval evaluation with **Recall@K** and qualitative retrieval visualization.
-- Multi-axis flood impact estimation across flood depth, human impact, property damage, building damage, infrastructure damage, economic disruption, and environmental debris.
-
----
 
 ## Repository structure
 
@@ -55,26 +45,6 @@ The current code is split into two modules:
     └── dataset_info.json
 ```
 
-Recommended asset layout for the public GitHub repository:
-
-```text
-.
-├── assets/
-│   ├── overview.png
-│   ├── FAL.png
-│   ├── FAE.png
-│   └── result1.png
-├── FAL/
-├── FAE/
-├── README.md
-├── requirements.txt
-└── LICENSE
-```
-
----
-
-## Method overview
-
 ## FAL: Flood Aftermath Localizer
 
 FAL is designed for **street-level localization of flood aftermath imagery**. Instead of assuming clean visual overlap between query and reference images, it explicitly addresses the appearance shift caused by floodwater, reflections, splashing, debris, and transient scene changes.
@@ -94,7 +64,7 @@ Stage 1 learns a **place-aware prompt space** using frozen CLIP image and text r
 Stage 2 refines the image encoder for robust place recognition. It introduces:
 
 - **visual cue anchoring**, using prompt-derived text features as semantic references;
-- **classification and metric learning objectives**, including cosine-margin classification and optional triplet loss;
+- **classification and metric learning objectives**, including cosine-margin classification and triplet loss;
 - **online Flood-Masked Invariance (FMI)**, which synthesizes flood-like perturbations and enforces invariance between dry and flood views from the same location.
 
 This stage is the core mechanism that improves retrieval robustness under flood-induced domain shift.
@@ -140,8 +110,6 @@ The estimator is intended to answer the question: **what visible impacts are pre
 ## 1. Create the Python environment for FAL
 
 ```bash
-conda create -n fale python=3.10 -y
-conda activate fale
 pip install -r FAL/requirements.txt
 pip install torch torchvision tqdm utm scikit-learn pillow faiss-cpu
 ```
@@ -153,10 +121,7 @@ If you want GPU FAISS, replace `faiss-cpu` with the appropriate GPU build for yo
 FAE uses `llamafactory-cli` and a pretrained Qwen2.5-VL checkpoint in the current training script. A typical setup is:
 
 ```bash
-conda create -n fae python=3.10 -y
-conda activate fae
 pip install llamafactory
-pip install transformers datasets accelerate peft pillow numpy
 ```
 
 You should also make sure the base model path in `FAE/run_flood_sft.py` points to your local checkpoint:
@@ -171,23 +136,10 @@ model_name_or_path="/path/to/Qwen2.5-VL-7B-Instruct"
 
 ## FAL data format
 
-The FAL code expects image filenames to encode geographic metadata in the file path, following the CosPlace-style convention used by the dataset loader.
+The FAL code expects image filenames to encode geographic metadata in the file path, following the CosPlace-style convention used by the dataset loader. 
+`@ UTM_east @ UTM_north @ UTM_zone_number @ UTM_zone_letter @ latitude @ longitude @ pano_id @ @ heading @ @ @ @ timestamp @ @.jpg`
 
-### Training images
-
-Training classes are constructed from image paths containing UTM and heading information. In `datasets/train_dataset.py`, class ids and groups are built from filename tokens extracted using `path.split("@")`.
-
-The code expects image paths to contain at least:
-
-- UTM east at token index `1`
-- UTM north at token index `2`
-- heading at token index `9`
-
-A typical file naming convention therefore looks like:
-
-```text
-some_prefix@utm_east@utm_north@...@heading@image.jpg
-```
+For example an image can be named: `@0544388.51@4172758.25@10@S@037.70098@-122.49646@kPnABhWJ1kA61eMNPLs1vQ@@210@@@@201606@@.jpg`
 
 ### Test / evaluation images
 
@@ -214,10 +166,10 @@ DATA_ROOT/
 The default positive match threshold is controlled by:
 
 ```bash
---positive_dist_threshold 25
+--positive_dist_threshold 50
 ```
 
-which means a retrieval is considered correct if it falls within 25 meters of a positive reference.
+which means a retrieval is considered correct if it falls within 50 meters of a positive reference. For real world flood management, this distance is suitable for municipalities to react.
 
 ## FMI texture data
 
@@ -302,27 +254,6 @@ CUDA_VISIBLE_DEVICES=0 python train_stage2.py \
   --batch_size 32 \
   --epochs_num 64 \
   --iterations_per_epoch 10000 \
-  --lr 1e-5 \
-  --classifiers_lr 1e-2 \
-  --train_set_folder /path/to/train \
-  --val_set_folder /path/to/val \
-  --test_set_folder /path/to/test \
-  --prompt_learners /path/to/last_prompt_learners.pth \
-  --save_dir fal_vitb16_stage2 \
-  --use_amp16 \
-  --soft_triplet
-```
-
-### FAL stage 2 with online FMI
-
-```bash
-cd FAL
-CUDA_VISIBLE_DEVICES=0 python train_stage2.py \
-  --backbone ViT-B-16 \
-  --fc_output_dim 512 \
-  --batch_size 32 \
-  --epochs_num 64 \
-  --iterations_per_epoch 10000 \
   --train_set_folder /path/to/train \
   --val_set_folder /path/to/val \
   --test_set_folder /path/to/test \
@@ -346,23 +277,10 @@ The FMI-related arguments exposed in `parser.py` let you control water level, bl
 cd FAL
 CUDA_VISIBLE_DEVICES=0 python eval.py \
   --backbone ViT-B-16 \
-  --fc_output_dim 512 \
   --resume_model /path/to/best_model.pth \
   --test_set_folder /path/to/test \
-  --infer_batch_size 64 \
-  --positive_dist_threshold 25
-```
-
-To save qualitative predictions:
-
-```bash
-cd FAL
-CUDA_VISIBLE_DEVICES=0 python eval.py \
-  --backbone ViT-B-16 \
-  --fc_output_dim 512 \
-  --resume_model /path/to/best_model.pth \
-  --test_set_folder /path/to/test \
-  --num_preds_to_save 3
+  --positive_dist_threshold 50 \
+  --num_preds_to_save 5
 ```
 
 This will report:
@@ -372,7 +290,7 @@ This will report:
 - `R@10`
 - `R@20`
 
-and optionally save qualitative retrieval results.
+and save qualitative retrieval results.
 
 ## FAE fine-tuning
 
@@ -456,108 +374,13 @@ The current `run_flood_sft.py` exposes its main hyperparameters as in-file const
 
 ---
 
-## Outputs
-
-## FAL outputs
-
-Stage 1 output:
-
-```text
-logs/<save_dir>/stage1/<timestamp>/
-├── last_prompt_learners.pth
-└── prompt_learners_<epoch>.pth
-```
-
-Stage 2 output:
-
-```text
-logs/<save_dir>/stage2/<timestamp>/
-├── best_model.pth
-├── last_checkpoint.pth
-├── model_<epoch>.pth
-└── predictions/...
-```
-
-## FAE outputs
-
-```text
-saves/Qwen2.5-VL-7B-Instruct/lora/flood_<timestamp>/
-├── epoch_3/
-├── epoch_6/
-├── ...
-└── train.log
-```
-
-Each stage directory contains LoRA adapters and a `predict_test/` directory with `generated_predictions.jsonl` after inference.
-
----
-
-## Reproducing the full FALE pipeline
-
-A typical workflow is:
-
-1. **Prepare the large-scale street-view reference dataset** for FAL.
-2. **Train FAL Stage 1** to obtain prompt learners.
-3. **Train FAL Stage 2** with or without FMI for flood-robust descriptors.
-4. **Evaluate retrieval performance** using Recall@K and save qualitative examples.
-5. **Prepare the GFA JSONL data** for FAE.
-6. **Fine-tune the VLM with LoRA** using the flood aftermath coding scheme.
-7. **Run FAE inference and evaluation** to obtain code-level prediction quality.
-8. Combine the two modules so that a real-world flood image can first be localized and then assessed.
-
----
-
-## Practical notes
-
-- The FAL parser is shared across training and evaluation, so some arguments that look unnecessary may still be required.
-- Stage 1 and Stage 2 currently rely on **saved prompt learners** as the bridge between the two stages.
-- FAL assumes a **CosPlace-style filename metadata convention**. If your data naming differs, update the parsing logic in `datasets/train_dataset.py` and `datasets/test_dataset.py`.
-- FAE currently assumes a local LLaMA-Factory workflow and a local Qwen2.5-VL checkpoint.
-- If you release this publicly, add:
-  - a `requirements_fae.txt` or `environment.yml`;
-  - a small `scripts/` folder with reproducible shell commands;
-  - public dataset access instructions;
-  - pretrained checkpoint download links.
-
----
-
-## Suggested GitHub cleanup before release
-
-Before making the repository public, it is worth cleaning up a few things:
-
-1. add a top-level `.gitignore`;
-2. move the figures into `assets/`;
-3. add `requirements_fae.txt` or a unified environment file;
-4. remove `__pycache__` and notebook checkpoint folders;
-5. rename dataset paths and hard-coded local paths into configurable arguments;
-6. add `scripts/train_fal_stage1.sh`, `scripts/train_fal_stage2.sh`, `scripts/eval_fal.sh`, and `scripts/train_fae.sh`;
-7. add a `Model Zoo` section when checkpoints are ready.
-
----
-
-## Citation
-
-If you use this codebase, please cite the corresponding paper once available:
-
-```bibtex
-@article{your_fale_paper,
-  title   = {FALE: Flood Aftermath Localization and Estimation from Images},
-  author  = {Author, A. and Author, B. and Author, C.},
-  journal = {arXiv or Journal Name},
-  year    = {2026}
-}
-```
-
-You may also cite the localization and estimation modules separately if they are released as independent papers.
-
----
-
 ## Acknowledgements
 
 This codebase builds on ideas from large-scale visual place recognition, CLIP-based representation learning, and LoRA-based multimodal fine-tuning. The public release can acknowledge upstream projects that inspired the implementation and engineering structure.
 
+* This work is inspired by [ProGEO](https://github.com/Chain-Mao/ProGEO).
+* Parts of the code are based on [CosPlace](https://github.com/gmberton/CosPlace).
+* The FAE module was trained using the [LLaMA-Factory](https://github.com/hiyouga/LlamaFactory) framework.
+
 ---
 
-## Contact
-
-For questions, issues, or collaboration, please open a GitHub issue or contact the corresponding author.
